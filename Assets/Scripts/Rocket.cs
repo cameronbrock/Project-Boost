@@ -7,11 +7,24 @@ public class Rocket : MonoBehaviour
 {
 
     Rigidbody rb;
+    AudioSource audio;
+
+    float thrustForce;
+    float rotationSpeed;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        audio = GetComponent<AudioSource>();
+        audio.loop = true;
+
+        thrustForce = 1.0f;
+        rotationSpeed = 1.0f;
+
+        // Prevent the rocket from tipping over by restricting rotation about X and Y.
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+
     }
 
     // Update is called once per frame
@@ -22,20 +35,47 @@ public class Rocket : MonoBehaviour
 
     private void ProcessInput()
     {
+
+        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+        //transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, 0);
+
         // Thrust
-        if (Input.GetKey(KeyCode.W))
+        if ( Input.GetKey(KeyCode.W) )
         {
-            rb.AddRelativeForce(Vector3.up);
+            rb.AddRelativeForce(thrustForce * Vector3.up);
+
+            if (!audio.isPlaying)
+            {
+                audio.Play();
+            }
+
+        }
+        else
+        {
+            audio.Stop();
+        }
+
+        if ( Input.GetKey(KeyCode.S) )
+        {
+            rb.AddRelativeForce(thrustForce * Vector3.down);
         }
 
         // Rotation
-        if ( Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D) )
+        if ( Input.GetKey(KeyCode.A) )
         {
-            print("Rotating left.");
+            transform.Rotate(rotationSpeed * Vector3.forward);
         }
-        else if ( Input.GetKey(KeyCode.D) && !Input.GetKey(KeyCode.A) )
+        if ( Input.GetKey(KeyCode.D) )
         {
-            print("Rotating right.");
+            transform.Rotate(rotationSpeed * Vector3.back);
         }
+
+        // Allow the player to reset position.
+        if ( Input.GetKey(KeyCode.R) )
+        {
+            transform.position = new Vector3(0, 0, 0);
+        }
+
+
     }
 }
