@@ -9,21 +9,23 @@ public class Rocket : MonoBehaviour
     Rigidbody rb;
     AudioSource audio;
 
-    float thrustForce;
-    float rotationSpeed;
+    [SerializeField] float thrustForce;
+    [SerializeField] float rotationSpeed;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         audio = GetComponent<AudioSource>();
-        audio.loop = true;
 
-        thrustForce = 1.0f;
-        rotationSpeed = 1.0f;
+        audio.loop = true;
+        rb.drag = 0.375f;
+
+        thrustForce = 100.0f;
+        rotationSpeed = 50.0f;
 
         // Prevent the rocket from tipping over by restricting rotation about X and Y.
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+        //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
 
     }
 
@@ -33,16 +35,27 @@ public class Rocket : MonoBehaviour
         ProcessInput();
     }
 
-    private void ProcessInput()
+    private void OnCollisionEnter(Collision collision)
     {
-
-        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
-        //transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, 0);
-
-        // Thrust
-        if ( Input.GetKey(KeyCode.W) )
+        switch (collision.gameObject.tag)
         {
-            rb.AddRelativeForce(thrustForce * Vector3.up);
+            case "Friendly":
+                print("OK");
+                break;
+            case "Fuel":
+                break;
+            default:
+                print("Dead");
+                break;
+        }
+    }
+
+    private void ProcessThrustInput()
+    {
+        // Forward thrust
+        if (Input.GetKey(KeyCode.W))
+        {
+            rb.AddRelativeForce(thrustForce * Time.deltaTime * Vector3.up);
 
             if (!audio.isPlaying)
             {
@@ -55,20 +68,43 @@ public class Rocket : MonoBehaviour
             audio.Stop();
         }
 
-        if ( Input.GetKey(KeyCode.S) )
+        // Backwards thrust
+        if (Input.GetKey(KeyCode.S))
         {
-            rb.AddRelativeForce(thrustForce * Vector3.down);
+            rb.AddRelativeForce(thrustForce * Time.deltaTime * Vector3.down);
+        }
+    }
+
+    private void ProcessRotationInput()
+    {
+
+        rb.freezeRotation = true;
+
+        if (Input.GetKey(KeyCode.A))
+        {
+            transform.Rotate(rotationSpeed * Time.deltaTime * Vector3.forward);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            transform.Rotate(rotationSpeed * Time.deltaTime * Vector3.back);
         }
 
+        rb.freezeRotation = false;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+
+    }
+
+    private void ProcessInput()
+    {
+
+        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+        //transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, 0);
+
+        //Thrust
+        ProcessThrustInput();
+
         // Rotation
-        if ( Input.GetKey(KeyCode.A) )
-        {
-            transform.Rotate(rotationSpeed * Vector3.forward);
-        }
-        if ( Input.GetKey(KeyCode.D) )
-        {
-            transform.Rotate(rotationSpeed * Vector3.back);
-        }
+        ProcessRotationInput();
 
         // Allow the player to reset position.
         if ( Input.GetKey(KeyCode.R) )
