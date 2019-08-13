@@ -1,13 +1,14 @@
-﻿//using System.Collections;
-//using System.Collections.Generic;
-//using System;
+﻿
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour
 {
 
     Rigidbody rb;
     AudioSource audio;
+
+    int currentLevel;
 
     [SerializeField] float thrustForce;
     [SerializeField] float rotationSpeed;
@@ -23,6 +24,8 @@ public class Rocket : MonoBehaviour
 
         thrustForce = 100.0f;
         rotationSpeed = 50.0f;
+
+        currentLevel = SceneManager.GetActiveScene().buildIndex;
 
         // Prevent the rocket from tipping over by restricting rotation about X and Y.
         //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
@@ -42,14 +45,21 @@ public class Rocket : MonoBehaviour
             case "Friendly":
                 print("OK");
                 break;
+            case "Goal":
+                currentLevel++;
+                print("GOAL - Current level: " + currentLevel);
+                SceneManager.LoadScene(currentLevel);
+                break;
             case "Fuel":
                 break;
             default:
-                print("Dead");
+                print("DEAD - Current level: " + currentLevel);
+                SceneManager.LoadScene(currentLevel);
                 break;
         }
     }
 
+    // Thrust
     private void ProcessThrustInput()
     {
         // Forward thrust
@@ -75,6 +85,7 @@ public class Rocket : MonoBehaviour
         }
     }
 
+    // Rotation
     private void ProcessRotationInput()
     {
 
@@ -98,7 +109,6 @@ public class Rocket : MonoBehaviour
     {
 
         transform.position = new Vector3(transform.position.x, transform.position.y, 0);
-        //transform.rotation = Quaternion.Euler(transform.rotation.x, transform.rotation.y, 0);
 
         //Thrust
         ProcessThrustInput();
@@ -107,11 +117,10 @@ public class Rocket : MonoBehaviour
         ProcessRotationInput();
 
         // Allow the player to reset position.
-        if ( Input.GetKey(KeyCode.R) )
+        if (Input.GetKey(KeyCode.R))
         {
-            transform.position = new Vector3(0, 0, 0);
+            SceneManager.LoadScene(currentLevel);
         }
-
 
     }
 }
