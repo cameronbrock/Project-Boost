@@ -1,6 +1,7 @@
 ﻿
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Rocket : MonoBehaviour
 {
@@ -26,6 +27,14 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem deathParticles;
     [SerializeField] ParticleSystem successParticles;
 
+    // Activate debug commands.
+    [SerializeField] bool levelControlOn;
+    [SerializeField] bool disableCollisions;
+
+    float fuelRemaining;
+    [SerializeField] float fuelDrainingSpeed;
+    public Text fuelGauge;
+
     enum State
     {
         ALIVE, DYING, TRANSCENDING
@@ -43,26 +52,18 @@ public class Rocket : MonoBehaviour
         rb.drag = 0.375f;
 
         thrustForce = 100.0f;
-        rotationSpeed = 50.0f;
+        rotationSpeed = 75.0f;
 
         currentLevel = SceneManager.GetActiveScene().buildIndex;
 
-        // Prevent the rocket from tipping over by restricting rotation about X and Y.
-        //rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+        fuelRemaining = 100.0f;
 
-        //Invoke("PlayLoadSound", 0.0f);
-
-    }
-
-    private void PlayLoadSound()
-    {
-        //audio.PlayOneShot(levelLoad);
     }
 
     // Update is called once per frame
-    
     void Update()
     {
+        fuelGauge.text = "FUEL: " + ((int) fuelRemaining) + "%";
         ProcessInput();
     }
     
@@ -77,6 +78,13 @@ public class Rocket : MonoBehaviour
     private void NextLevel()
     {
         currentLevel++;
+        SceneManager.LoadScene(currentLevel);
+        state = State.ALIVE;
+    }
+
+    private void PrevLevel()
+    {
+        currentLevel--;
         SceneManager.LoadScene(currentLevel);
         state = State.ALIVE;
     }
@@ -104,11 +112,14 @@ public class Rocket : MonoBehaviour
             case "Fuel":
                 break;
             default:
-                state = State.DYING;
-                audio.Stop();
-                audio.PlayOneShot(deathSound);
-                deathParticles.Play();
-                Invoke("SameLevel", levelLoadDelay);
+                if (!disableCollisions)
+                {
+                    state = State.DYING;
+                    audio.Stop();
+                    audio.PlayOneShot(deathSound);
+                    deathParticles.Play();
+                    Invoke("SameLevel", levelLoadDelay);
+                }
                 break;
         }
     }
@@ -119,10 +130,23 @@ public class Rocket : MonoBehaviour
         
         // Forward thrust
         
-        if (Input.GetKey(KeyCode.W))
+        if (Input.GetKey(KeyCode.W) && (fuelRemaining > Mathf.Epsilon))
         {
             rb.AddRelativeForce(thrustForce * Time.deltaTime * Vector3.up);
 
+            // Drain remaining fuel.
+            if (fuelRemaining <= Time.deltaTime)
+            {
+                fuelRemaining = 0.0f;
+            }
+            else
+            {
+                fuelRemaining -= fuelDrainingSpeed * Time.deltaTime;
+                if (fuelRemaining <= Time.deltaTime)
+                {
+                    fuelRemaining = 0.0f;
+                }
+            }
             if (!audio.isPlaying)
             {
                 audio.PlayOneShot(mainEngine);
@@ -190,8 +214,16 @@ public class Rocket : MonoBehaviour
         // Allow the player to reset position.
         if (Input.GetKey(KeyCode.R))
         {
-            SceneManager.LoadScene(currentLevel);
+            SameLevel();
         }
-        
+        else if (Input.GetKeyDown(KeyCode.L) && levelControlOn)
+        {
+            NextLevel();
+        }
+        else if (Input.GetKeyDown(KeyCode.K) && levelControlOn)
+        {
+            PrevLevel();
+        }
+
     }
 }
