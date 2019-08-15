@@ -9,8 +9,6 @@ public class Rocket : MonoBehaviour
     Rigidbody rb;
     AudioSource audio;
 
-    int currentLevel;
-
     // Rocket specifications.
     [SerializeField] float thrustForce;
     [SerializeField] float rotationSpeed;
@@ -54,8 +52,6 @@ public class Rocket : MonoBehaviour
         thrustForce = 100.0f;
         rotationSpeed = 75.0f;
 
-        currentLevel = SceneManager.GetActiveScene().buildIndex;
-
         fuelRemaining = 100.0f;
 
     }
@@ -63,30 +59,33 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        fuelGauge.text = "FUEL: " + ((int) fuelRemaining) + "%";
+        fuelGauge.text = "LEVEL " + (SceneManager.GetActiveScene().buildIndex + 1) + "\nFUEL: " + ((int) fuelRemaining) + " %";
         ProcessInput();
     }
     
     // Reset the current level.
     private void SameLevel()
     {
-        SceneManager.LoadScene(currentLevel);
-        state = State.ALIVE;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     // Load the next scene/level.
     private void NextLevel()
     {
-        currentLevel++;
-        SceneManager.LoadScene(currentLevel);
-        state = State.ALIVE;
+        int currentLevel = SceneManager.GetActiveScene().buildIndex;
+        if (currentLevel < SceneManager.sceneCountInBuildSettings - 1)
+        {
+            SceneManager.LoadScene(currentLevel + 1);
+        }
     }
 
     private void PrevLevel()
     {
-        currentLevel--;
-        SceneManager.LoadScene(currentLevel);
-        state = State.ALIVE;
+        int currentLevel = SceneManager.GetActiveScene().buildIndex;
+        if (currentLevel > 0)
+        {
+            SceneManager.LoadScene(currentLevel - 1);
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -135,17 +134,10 @@ public class Rocket : MonoBehaviour
             rb.AddRelativeForce(thrustForce * Time.deltaTime * Vector3.up);
 
             // Drain remaining fuel.
+            fuelRemaining -= fuelDrainingSpeed * Time.deltaTime;
             if (fuelRemaining <= Time.deltaTime)
             {
                 fuelRemaining = 0.0f;
-            }
-            else
-            {
-                fuelRemaining -= fuelDrainingSpeed * Time.deltaTime;
-                if (fuelRemaining <= Time.deltaTime)
-                {
-                    fuelRemaining = 0.0f;
-                }
             }
             if (!audio.isPlaying)
             {
@@ -191,8 +183,10 @@ public class Rocket : MonoBehaviour
     private void ProcessInput()
     {
 
+        // Freeze the rocket in the Z-direction to keep the game 2D.
         transform.position = new Vector3(transform.position.x, transform.position.y, 0);
         
+        // If the player is dead, freeze controls.
         if (state == State.ALIVE)
         {
             //Thrust
@@ -203,12 +197,7 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-            //audio.Stop();
             rb.constraints = RigidbodyConstraints.None;
-            //rb.freezeRotation = true;
-            //rb.constraints = RigidbodyConstraints.FreezePositionX
-            //               | RigidbodyConstraints.FreezePositionY
-            //               | RigidbodyConstraints.FreezePositionZ;
         }
         
         // Allow the player to reset position.
@@ -216,10 +205,12 @@ public class Rocket : MonoBehaviour
         {
             SameLevel();
         }
+        // Allow the player to go to next level via L-key.
         else if (Input.GetKeyDown(KeyCode.L) && levelControlOn)
         {
             NextLevel();
         }
+        // Allow the player to go to previous level via K-key.
         else if (Input.GetKeyDown(KeyCode.K) && levelControlOn)
         {
             PrevLevel();

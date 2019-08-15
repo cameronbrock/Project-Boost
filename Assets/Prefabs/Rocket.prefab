@@ -14721,7 +14721,8 @@ MonoBehaviour:
   engineParticles: {fileID: 198100718362982139}
   deathParticles: {fileID: 198204747573019096}
   successParticles: {fileID: 198631064377041812}
-  levelControlOn: 0
+  levelControlOn: 1
   disableCollisions: 0
+  fuelDrainingSpeed: 37
   fuelGauge: {fileID: 0}
   state: 0
